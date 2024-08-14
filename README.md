@@ -83,7 +83,78 @@ script 태그에 type 프로퍼티를 추가하여 "text/babel" 옵션을 주면
 다시 실행하면, 정상적으로 h1태그가 잘 렌더링되는 것을 확인할 수 있다.
 
 그런데, 콘솔창에 한가지 에러가 발생하고 있는데,
-`transformScriptTags.ts:253 You are using the in-browser Babel transformer. Be sure to precompile your scripts for production`
+`You are using the in-browser Babel transformer. Be sure to precompile your scripts for production`
 내용을 해석하면, 브라우저에서 스크립트를 실시간으로 트랜스파일하지 말고 미리 트랜스파일된 스크립트를 실행시키라는 의미이다.
 
 그럼 이제 이 에러를 해결해보자.
+여기에 적용할 수 있는 도구가 바로 Webpack과 같은 번들러이다.
+
+## commit -m "Babel on build process"
+
+`You are using the in-browser Babel transformer. Be sure to precompile your scripts for production` 에러는
+성능적인 이슈로 인해 발생하는 에러였다.
+
+이 에러를 해결하기 위해, 빌드 타임에서 트랜스파일 할 수 있도록 수정해보자.
+
+이를 위해, 먼저 npm을 이용하여 라이브러리 3개를 설치하자.
+`@babel/cli`와 `@babel/core`는 빌드 타임에서 Babel을 실행시키기 위한 도구이고,
+`@babel/preset-react`는 react 문법을 javascript로 변환시키기 위한 도구이다.
+쉽게 말해, 이 preset을 통해 Babel에게 "이런 문법은 이렇게 변환하면 돼"라고 알려주는 것이다.
+
+이전에 사용했던 standalone 버전도 이 preset이 포함되어있다.
+
+라이브러리 설치가 끝나면 루트 디렉토리에 node_modules라는 폴더가 하나 생기는 것을 볼 수 있다.
+방금 설치한 패키지들이 들어있는 폴더이며, 일반적으로 파일 용량이 크기 때문에 repository에 올리지 않는 것이 원칙이다.
+
+따라서, 루트 디렉토리에 .gitignore 파일을 하나 만들어준 다음 node_modules를 버전관리에서 제외시키도록 하자.
+
+다음은 Babel 설정 작업이다.
+Babel은 실행될 때 내부적으로 .babelrc라는 파일명을 찾아 설정 정보를 읽기 때문에 이 이름으로 파일을 하나 생성해줘야 한다.
+
+> rc란 일반적으로 UNIX 운영체제에서 설정 파일을 의미하는 접미사
+
+.babelrc 파일에 이번에 설치한 preset을 전달한 다음,
+이제 빌드를 위한 폴더 구조를 잡아보도록 하자.
+
+src 폴더를 하나 만든 후, 그 안에 app.js 파일을 만들어 그동안 작성했던 JSX 스크립트를 옮겨주도록 하자.
+
+자, 여기까지 했으면 이제 빌드 스크립트를 작성해줄건데,
+package.json 파일을 열어 "scripts"라는 객체를 만들어준 다음,
+"src 폴더 내부에 있는 스크립트 파일들을 모두 트랜스파일하여 dist라는 폴더로 옮겨줘"
+라는 의미로 다음과 같이 작성하자.
+`"build": "babel src --out-dir dist"`
+
+> babel: babel 실행 명령어, src: 원본 소스 폴더, --out-dir: 트랜스파일 결과물 저장하는 폴더 정의 옵션
+
+자 그럼 npm run build 명령어를 한번 입력해보자.
+
+실행이 완료되면 dist라는 폴더에 같은 이름으로 스크립트 파일이 하나 생성된 것을 확인할 수 있다.
+
+```javascript
+// dist/app.js
+const App = () =>
+  /*#__PURE__*/ React.createElement("h1", null, "Hello, React!");
+ReactDOM.render(
+  /*#__PURE__*/ React.createElement(App, null),
+  document.getElementById("root")
+);
+```
+
+파일을 열어보니, JSX 스크립트가 javascript로 변경되어있다.
+이는 우리가 맨처음 작성했던 스크립트와 거의 동일한 것을 볼 수 있다.
+
+자 그럼, 마지막으로 index.html 파일을 연 다음, dist 폴더에 스크립트를 실행하도록 수정해보자.
+먼저 Babel CDN는 이제 필요없으니 주석처리를 해주자.
+`<script src="dist/app.js">`
+이런 식으로 스크립트를 변경한 다음, 파일을 실행해보면 에러가 말끔하게 사라진 것을 확인할 수 있다.
+
+우리는 이번에 빌드 타임에서 스크립트를 트랜스파일하기 위한 많은 작업들을 진행해보았다.
+
+1. local에서 Babel을 실행할 수 있도록 총 3개의 패키지를 설치했고,
+2. 용량이 큰 파일들은 버전 관리에서 제외시켜주었다.
+3. 그리고 Babel 실행을 위한 build 스크립트를 작성해보았다.
+
+Babel의 Standalone 공식 문서를 확인해보면,
+이런 트랜스파일 작업은 일반적으로 Webpack과 같은 번들러와 통합하여 운영한다고 적혀있다.
+
+그럼 다음에는 번들러란 무엇인지, 그리고 왜 Babel을 번들러와 통합하여 운영해야하는지에 대해 알아보자.
