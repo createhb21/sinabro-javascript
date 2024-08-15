@@ -343,3 +343,106 @@ You can also set it to 'none' to disable any default behavior. Learn more: https
 
 이 경고는 번들러 실행 모드를 따로 설정해주지 않았다는 것인데,
 그럼 이제 모드 설정을 비롯한 추가적인 Webpack 설정을 진행해보도록 하자.
+
+## commit -m "with Webpack Plugins"
+
+우리는, 번들링의 개념이 무엇인지 알아본 다음, 기본적인 Webpack 설정을 진행했다.
+그런데, build 명령어를 실행하니, 다음과 같은 에러가 발생하고 있었다.
+
+```bash
+The 'mode' option has not been set, webpack will fallback to 'production' for this value.
+Set 'mode' option to 'development' or 'production' to enable defaults for each environment.
+You can also set it to 'none' to disable any default behavior. Learn more: https://webpack.js.org/configuration/mode/
+```
+
+Webpack 실행 모드를 따로 설정해주지 않았다는 것인데,
+왜 이런 에러가 발생했는지 알아보고, 개발 환경을 좀 더 편리하게 만들어 줄 Webpack 설정을 진행해보도록 하자.
+
+Webpack의 모드 속성은 production과 development, 두 가지 값을 가질 수 있다.
+일반적으로 운영 단계에서는 production, 개발 단계에서는 development 옵션을 사용한다.
+두 옵션의 차이는 크게 빌드 속도와 코드 최적화 여부에 있는데(코드 최적화 과정이 있냐 없냐에 따른 빌드 속도 차이 발생),
+두 옵션으로 모두 빌드를 진행해본 다음 결과를 비교해보자.
+
+Webpack 실행이 완료외면 빌드 타임이 얼마나 걸렸는지 확인할 수 있는데,
+production 모드가 시간이 더 오래 걸린 것을 볼 수 있다.
+
+bundle.js 파일을 열어보면 왜 이런 결과가 발생했는지 알 수 있는데,
+먼저 development 모드로 빌드한 결과물에는 우리가 사용했던 addNumbers 같은 함수명이 코드 상에 그대로 남아있다.
+반면, production 모드로 빌드한 결과물에는 addNumbers라는 함수명을 찾을 수 없다.
+
+이렇게 코드가 변경된 이유는 production 모드에서 상수 폴딩이라는 최적화 기법이 자동으로 적용됐기 때문이다.
+
+이처럼, production 모드에서는 코드 최적화 과정이 자동으로 포함되기 때문에,
+상대적으로 빌드 속도가 느린 것이다.
+
+> production : 코드 최적화(트리 쉐이킹, 코드 스플리팅, 코드 난독화 등) 과정이 자동으로 포함됨
+> development : 코드 최적화 과정이 자동으로 포함되지 않음
+
+이 최적화 과정에는 트리 쉐이킹, 코드 스플리팅, 코드 난독화 등의 작업도 포함된다.
+
+실행 속도보다 빌드 속도가 더 중요한 개발 단계인 development 모드에서는 이 과정을 의도적으로 생략하기 때문에
+빌드 속도가 빠른 것이다.
+
+현재 우리는 개발 환경이기 때문에, 일단은 mode를 development로 설정해주도록 하자.
+
+자, 지금부터는 플러그인이라는 것을 설치해줄 것인데,
+그 전에, 지금까지 우리는 어떤 도구를 적용하던 간에, 먼저 "왜 설치애햐 하는지"를 이해한 다음 적용했었다.
+왜냐하면 특정 도구를 적용하지 않으면 아예 동작하지 않거나, "경고" 메시지가 나왔기 때문이다.
+즉, 도구를 적용해야하는 이유가 "명확"했다.
+
+하지만 지금부터 설치할 플러그인은 이런 식으로 적용해야할 이유를 친절하게 알려주진 않는다.
+그 이유는 우리가 직접 느껴야 한다는 뜻인데, 특히 이런 빌드 도구를 다루는 경우, 프로그래밍적인 불편함을 느끼는 것이 중요하다.
+
+그럼 지금부터 의도적으로 불편함을 한번 만들어보자.
+일단, dist 폴더를 한번 제거하고 webpack config 파일을 열어, output filename 값을 수정해보도록 한다.
+
+Webpack에서는 파일명에 [hash]라는 값을 붙이면, 번들 파일에 해쉬값이 자동으로 붙는데,
+output filename 값을 "bundle.[hash].js" 으로 수정해본 다음 npm run build 명령어를 입력해보자.
+그러면 dist 폴더 내에 실제로 해시값이 붙은 bundle.c8beb8b2babd2e4d9e5e.js 파일이 생성된 것을 볼 수 있다.
+bundle. 다음에 붙은 해시값은 실제로 빌드 명령어를 수행할 때마다 변경되는데,
+그럼 우리는 index.html에 script 태그에서 매번 bundle.js 파일명을 해시값이 붙어있는 파일명으로 수정해줘야할까?
+또한 해시값은 붙은 번들 파일과 index.html에서 불러오는 파일명이 달라진다면, 당연히 정상적으로 동작도 하지 않게 된다.
+
+**이런 식으로 빌드할 때마다 스크립트 태그를 수정해주는 것은 굉장히 번거로운 일이 아닐 수 없다.**
+심지어, real world 프로젝트에서는 이 번들 파일이 여러 개인 경우가 많다.
+상상만 해도 굉장히 불편할 것 같다.
+
+자, 이 불편함을 해결해 줄 플러그인이 바로 `html-webpack-plugin` 이다.
+아래 명령어를 입력하여 패키지를 설치하자.
+
+```bash
+npm install --save-dev html-webpack-plugin
+```
+
+이제 webpack.config.js 파일에 plugins라는 이름의 배열을 정의하고, 방금 설치한 플러그인을 import하자.
+패키지를 import 한 다음, 마우스를 갖다 대면, 패키지가 class 문법으로 작성되어있는 것을 볼 수 있다.
+따라서, new 키워드로 인스턴스를 하나 생성한 다음, plugins 배열 안에 전달하면 된다.
+플러그인에 두 parameter를 전달해주도록 할건데,
+먼저, template 옵션은 기준이 되는 Html 파일명을 지정해주면 된다.
+우리는 root path에 있는 index.html 파일에 script 태그를 삽입할 것이기 때문에, 이 경로를 지정해주자.
+output filename도 동일하게 index.html로 지정해주자.
+
+자, 이 상태에서 npm run build 명령어를 입력해보면 dist 폴더 안에 index.html 파일이 하나 생성되고,
+bundle 파일 경로도 잘 설정된 것을 볼 수 있다.
+
+마찬가지로 dist내의 index.html 파일을 실행해보면 h1 태그가 잘 렌더링 되는 것을 확인할 수 있다.
+
+지금까지 살펴본 plugin을 한 문장으로 정리하면,
+**빌드 프로세스의 특정 시점에 후킹되어, 추가 기능을 수행하는 확장 모듈**이라고 할 수 있다.
+
+즉, 빌드 환경을 구성하는 과정에서 뭔가 불편한 점이 느껴진다면, 앞으로는 적절한 plugin을 찾아,
+이 plugins 배열에 전달해주면 되겠다.
+
+유용한 플러그인들은 [Awesome Webpack](https://webpack.js.org/awesome-webpack/) 사이트의 Webpack Plugins라는 섹션에서 어느 정도 찾아볼 수 있다.
+
+쭉 보다보면 재미있는 플러그인들이 많으니, 시간되면 한번씩 참고해보는 것을 추천한다.
+예를 들면, Service Worker를 사용하는 프로젝트에서 관련 파일을 자동으로 설정해주는 플러그인도 있고, 번들링 결과 분석 도구를 자동으로 만들어주는 플러그인도 있다.
+또, 특정 파일을 다른 폴더에 복사해주는 플러그인도 있다.
+
+만약 찾는 플러그인이 없다면, 직접 플러그인을 정의하는 방법도 있으며 이는 [Plugins API](https://webpack.js.org/api/plugins/)를 참고하면 되겠다.
+
+자, 정리해보자.
+우리는 플러그인이란 무엇인지, 어떤 역할을 하는지에 대해 알아보았다.
+다음에는 dev tool에 대해 알아볼 것인데,
+빌드 과정에서 번들링 결과물에 대한 추가 작업을 자동화해주는 플러그인과는 달리,
+dev tool은 개발 환경 자체에 추가 기능을 제공하기 위한 툴들이다.
