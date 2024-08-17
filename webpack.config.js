@@ -1,5 +1,9 @@
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const { CleanWebpackPlugin } = require("clean-webpack-plugin");
+const DotenvWebpack = require("dotenv-webpack");
+
+const buildMode = process.env.NODE_ENV === "dev" ? "development" : "production";
 
 module.exports = {
   entry: "./src/app.js",
@@ -18,11 +22,22 @@ module.exports = {
       },
     ],
   },
-  mode: "development",
+  mode: buildMode,
   plugins: [
+    new CleanWebpackPlugin(),
     new HtmlWebpackPlugin({
       template: "./index.html",
       filename: "index.html",
     }),
+    new DotenvWebpack({
+      path: `./.env.${process.env.NODE_ENV || "dev"}`,
+    }),
   ],
+  devServer: {
+    static: {
+      directory: path.join(__dirname, "dist"),
+    },
+    port: 9000,
+    open: true,
+  },
 };

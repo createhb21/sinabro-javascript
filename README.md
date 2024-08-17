@@ -446,3 +446,229 @@ bundle 파일 경로도 잘 설정된 것을 볼 수 있다.
 다음에는 dev tool에 대해 알아볼 것인데,
 빌드 과정에서 번들링 결과물에 대한 추가 작업을 자동화해주는 플러그인과는 달리,
 dev tool은 개발 환경 자체에 추가 기능을 제공하기 위한 툴들이다.
+
+## commit -m "with Webpack Dev Server"
+
+개발 서버를 적용해보자.
+먼저 적용해볼 것은 clean-webpack-plugin이다.
+
+지금까지는 이전 빌드 결과물이 남아있지 않도록
+dist 폴더를 일일이 제거해주었는데,
+이 플러그인을 적용하면 이 작업을 자동화할 수 있다.
+
+다음 명령어를 입력하여 패키지를 설치해주자.
+
+```bash
+$ npm install --save-dev clean-webpack-plugin
+```
+
+다음과 같이 인스턴스를 plugins 배열에 추가해주면 된다.
+
+```js
+// webpack.config.js
+
+plugins: [
+   new CleanWebpackPlugin(),
+   new HtmlWebpackPlugin({
+     template: "./index.html",
+     filename: "index.html",
+   }),
+ ],
+```
+
+그런데, 여기서 주의할 점은 이 플러그인들을 적용할 때는 순서가 중요하게 작용한다는 것이다.
+플러그인이 전달된 순서에 다라 동기적으로 동작하기 때문인데,
+
+위의 webpack.config.js 에서처럼,
+빌드 전에 초기 설정을 진행해주는 플러그인들을 앞쪽으로 배치해주는 것이 일반적이다.
+
+자 이렇게 설정해놓으면 빌드할 때마다 이전 빌드 결과물이 남지 않는 것을 볼 수 있다.
+
+이제 개발 서버를 설정해 볼것이다.
+CRA나 vite로 시작하는 프로젝트의 경우
+npm start 혹은, npm run dev 명령어를 입력하면 개발 서버가 바로 시작되는 것을 볼 수 있었을 것이다.
+
+그런데 우리는 build한 후, index.html을 직접 실행해야 하는 번거로움이 존재했다.
+CRA나 vite애서 개발 서버가 자동으로 시작되었던 이유는 바로
+개발 서버 설정이 되어 있기 때문이다.
+
+다음 명령어를 입력하여 개발 서버 셋팅을 위한 패키지를 설치해주자.
+
+```bash
+$ npm install --save-dev webpack-dev-server
+```
+
+devServer는 기본적으로 빌드 폴더의 index.html 파일을 찾아 실행하기 때문에,
+다음과 같이 빌드 폴더 경로만 잘 설정해주면 된다.
+또한 포트번호는 공식 문서에 가이드된 대로 9000번 포트를 사용해주자.
+그 다음 open 옵션을 true로 설정하여 devServer가 실행되면 자동으로 브라우저가 열리도록 설정해주자.
+
+```js
+// webpack.config.js
+
+devServer: {
+   static: {
+     directory: path.join(__dirname, "dist"),
+   },
+   port: 9000,
+   open: true,
+ },
+```
+
+자, 여기까지 설정이 완료되었으면, package.json 파일을 열어서
+npm start 명령어를 입력했을 때, 개발 서버를 실행해주도록 server라는 명령어를 추가해야한다.
+
+자, 그럼 npm start 명령어를 입력해보자.
+개발 서버가 자동으로 잘 실행되는 것을 볼 수 있고,
+코드가 변경되어도 개발 서버에 실시간으로 잘 반영되는 것을 볼 수 있다.
+
+마지막으로, 환경 변수를 관리할 수 있는 플러그인을 설정해줄건데,
+보통 실무에서는 api 서버가 개발 서버, 스테이징 서버, 프로덕션 서버로 나눠져 있다.
+
+개발 서버는 말 그대로, 개발자가 개발하는 데 사용하는 서버이고,
+스테이징 서버는 개발 완료된 코드가 올라가, QA 같은 분들이 품질 검수를 진행하는 서버이다.
+
+마지막으로 프로덕션 서버는 실제 사용자들이 이용하는 서버이다.
+이 각각의 서버들은 서브도메인이 모두 다르기 때문에,
+API 호출을 위한 도메인 관리를 환경 변수로 하는 것이 일반적이다.
+
+각 환경에 맞는 환경 변수들만 별도의 파일로 관리해주면,
+프론트엔드 코드 수정없이 빌드 과정에서 각 환경에 맞는 데이터를 넣어줄 수 있다.
+
+webpack에서 환경 변수 관리를 위해 사용할 수 있는 라이브러리가 바로 dotenv-webpack이라는 플러그인이다.
+
+라이브러리를 설치해주자.
+
+```bash
+$ npm install --save-dev dotenv-webpack
+```
+
+환경 변수 파일은 보통 .env 라는 파일명 뒤에
+어떤 환경에 대한 파일이냐를 접미사로 나타내는 것이 일반적이다.
+우리는 앞선 예시와 같이, dev와 stg, prd로 나눠주도록 하자.
+
+테스트 용도니까, TEST_API_URL이라는 변수명으로 dev, stg, prd라는 문자열을 각 환경 변수 파일 안에 넣어주도록 하자.
+
+그리고 app.js 파일로 돌아가, 환경 변수를 보여주기 위해 JSX 문법을 다음과 같이 수정해보자.
+
+```js
+const App = () => <h1>Hello, React With JSX {process.env.TEST_API_URL}</h1>;
+```
+
+dev 환경 변수를 사용한 번들 파일이라면, 여기에 dev라는 문자열이 찍힐 것이다.
+stg와 prd도 마찬가지로 동작할 것이다.
+
+자 지금까지 우리는 각 빌드 환경에 맞는 환경 변수를 총 3개의 파일로 분리해놓았다.
+그런데, webpack이 빌드를 시작하면서, 어떤 환경 변수 파일을 사용해야 하는지는,
+우리가 명시적으로 webpack에게 알려줘야 한다.
+
+이를 위해서 NODE_ENV라는 또다른 환경 변수를 사용해주자.
+
+다음과 같이 script가 실행될 때, NODE_ENV라는 환경변수값을 각 환경에 맞게 넣어주면,
+webpack에세 어떤 환경에 대한 빌드 프로세스인지를 알려줄 수 있다.
+
+```json
+// package.json
+
+"scripts": {
+    "start": "NODE_ENV=prd webpack serve",
+    "build": "webpack"
+},
+```
+
+그리고, webpack 설정 파일 안에서, NODE_ENV 라는 환경 변수를 받아
+적절한 파일을 찾아 빌드할 수 있도록 해주자.
+또한 build의 mode는 NODE_ENV 값이 dev일때만 development mode로 동작하도록 설정해주도록 하자.
+
+```js
+// webpack.config.js
+
+const path = require("path");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
+const { CleanWebpackPlugin } = require("clean-webpack-plugin");
+const DotenvWebpack = require("dotenv-webpack");
+
+const buildMode = process.env.NODE_ENV === "dev" ? "development" : "production";
+
+module.exports = {
+  entry: "./src/app.js",
+  output: {
+    filename: "bundle.[hash].js",
+    path: path.resolve(__dirname, "dist"),
+  },
+  module: {
+    rules: [
+      {
+        test: /\.js$/,
+        exclude: /node_modules/,
+        use: {
+          loader: "babel-loader",
+        },
+      },
+    ],
+  },
+  mode: buildMode,
+  plugins: [
+    new CleanWebpackPlugin(),
+    new HtmlWebpackPlugin({
+      template: "./index.html",
+      filename: "index.html",
+    }),
+    new DotenvWebpack({
+      path: `./.env.${process.env.NODE_ENV || "dev"}`,
+    }),
+  ],
+  devServer: {
+    static: {
+      directory: path.join(__dirname, "dist"),
+    },
+    port: 9000,
+    open: true,
+  },
+};
+```
+
+그런데 만약 PC가 윈도우 PC라면, npm start 명령어 입력 시, NODE_ENV라는 명령어를 실행할 수 없다는 에러가 발생한다.
+
+왜냐하면, 윈도우에서는 환경 변수 설정하는 명령어가 다음과 같기 때문이다.
+
+```bash
+set NODE_ENV=development && webpack serve
+```
+
+반대로, 윈도우 PC에서 이러한 명령어를 사용했다면, MAC이나 리눅스 PC에서 에러가 발생할 수 있다.
+
+개인적으로 개발하는 프로젝트라면, 각 환경에 맞는 명령어를 사용하면 되겠지만,
+현업에서는 어떤 팀원은 Mac을 사용하고, 어떤 팀원은 윈도우를 사용하고, 또 서버 구성은 리눅스로 구성되어 있고, 이렇게 개발 환경이 일치하지 않는 경우가 많다.
+
+이런 스크립트 호환성 문제를 해결하기 위해 사용할 수 있는 라이브러리가 바로 cross-env 이다.
+
+그럼 cross-env 라이브러리를 설치해주자.
+
+```bash
+# `npm install --save-dev cross-env`
+```
+
+그 다음에는 start 스크립트 앞에 cross-env라는 prefix를 추가해주면 된다.
+
+```json
+// package.json
+
+"scripts": {
+    "start": "cross-env NODE_ENV=prd webpack serve",
+    "build": "webpack"
+},
+```
+
+이렇게 되면, 어떤 환경에서든 동일한 명령어로 실행이 가능해진다.
+
+자, 그럼 환경 변수 사용을 위한 세팅을 모두 마쳤다.
+이제 npm start 명령어의 NODE_ENV 값을 바꿔보면서 실행해보도록 하자.
+
+참고로, 환경 변수값의 변화는 반드시 실행 환경을 종료한 다음,
+재실행해야 정상적으로 반영된다.
+
+dev, stg, prd로 바꿔가면서 실행해보면,
+JSX 내의 문자열이 잘 변경되는 것을 확인할 수 있다.
+
+자, 그럼 여기까지 해서 실무에서 활용하기 좋은 플러그인들을 추가적으로 적용해보았다.
