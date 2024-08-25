@@ -1,4 +1,8 @@
 {
+  "name": "react-with-out-cra",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
     "start": "cross-env NODE_ENV=dev webpack serve",
     "build": "webpack"
