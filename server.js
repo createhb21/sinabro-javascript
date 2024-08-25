@@ -1,22 +1,23 @@
-import http from "http";
-const hostname = "localhost";
+// express => Fast, unopinionated, minimalist web framework for node
+
+import express from "express";
+const app = express();
 const port = 3000;
 
-const server = http.createServer((req, res) => {
-  if (req.url === "/users" && req.method === "GET") {
-    // ..... fetch user list and return them
-  } else if (req.url === "/users" && req.method === "POST") {
-    // ..... get the payload, and create a new user
-  }
-  console.log("💡 req", {
-    url: req.url,
-    method: req.method,
-  });
-  res.statusCode = 200;
-  res.setHeader("Content-Type", "text/plain");
-  res.end("Hello, World!");
-});
+const handler1 = (req, res, next) => {
+  // .....
 
-server.listen(port, hostname, () => {
-  console.log(`Server running at http://${hostname}:${port}`);
+  console.log("handler1");
+  next();
+};
+
+const handler2 = (req, res) => {
+  console.log("handler2");
+  res.send("Hello World from express!");
+};
+
+app.get("/", handler1, handler2);
+
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}`);
 });
