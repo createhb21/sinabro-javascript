@@ -3212,3 +3212,8 @@ yocto-queue@^1.0.0:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/yocto-queue/-/yocto-queue-1.1.1.tgz#fef65ce3ac9f8a32ceac5a634f74e17e5b232110"
   integrity sha512-b4JR1PFR10y1mKjhHY9LaGo6tmrgjit7hxVIeAmyMw3jegXR4dhYqLaQF5zMXZxY7tLpMyJeLjr1C4rLmkVe8g==
+
+your-pretty@^0.0.4:
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/your-pretty/-/your-pretty-0.0.4.tgz#fa92834f9c01d2e2305e5291780d4c5330eded53"
+  integrity sha512-QYPdAzuy5ZEkaPSDz66LGdiB5bhY/XdefE8gtdht9pUorvozL8jpDPbkbI1nY6dsotiDsyed35MR7oK2OD+PbA==
