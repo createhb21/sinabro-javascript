@@ -12,11 +12,16 @@ window.addEventListener("popstate", () => {
   }
 });
 
-const goto = (url) => {
+const goto = (url, { push } = {}) => {
   const pathname = url.split("?")[0]; // "/" | "/search" | ...
+  const params = Object.fromEntries(new URLSearchParams(url.split("?")[1]));
   if (routes[pathname]) {
-    history.pushState({}, "", url);
-    routes[pathname]();
+    if (push) {
+      history.pushState({}, "", url);
+    }
+    routes[pathname]({
+      searchParams: params,
+    });
     return;
   }
 
@@ -34,14 +39,16 @@ function renderIndex() {
 
   document.body.querySelector("form").addEventListener("submit", (event) => {
     event.preventDefault();
-    goto(`/search?query=${event.target.query.value}`);
+    goto(`/search?query=${event.target.query.value}`, { push: true });
   });
 }
 
-function renderSearch() {
+function renderSearch({ searchParams }) {
   document.querySelector("#app").innerHTML = `
     <h1>Search Results</h1>
+    <p>keyword: ${searchParams.query}</p>
   `;
 }
 
-renderIndex();
+debugger;
+goto(location.pathname + location.search);
