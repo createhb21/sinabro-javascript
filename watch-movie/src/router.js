@@ -9,6 +9,7 @@ export const goto = (url, { push, initialData } = {}) => {
     }
     routes[pathname]({
       searchParams: params,
+      initialData,
     });
     return;
   }
