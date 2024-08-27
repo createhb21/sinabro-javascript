@@ -1,15 +1,35 @@
-class SubsetsOfJQuery {
-  private elements: Element[];
+// class SubsetsOfJQuery {
+//   private elements: Element[];
+//   constructor(selector: string, container?: Element) {
+//     this.elements = Array.from(
+//       (container ?? document).querySelectorAll(selector)
+//     );
+//   }
+//
+//   click(handler: EventListener) {
+//     this.elements.forEach((element) => {
+//       element.addEventListener("click", handler);
+//     });
+//   }
+//
+//   length() {
+//     return this.elements.length;
+//   }
+// }
 
-  constructor(selector: string) {
-    this.elements = Array.from(document.querySelectorAll(selector));
-  }
+export const $ = (selector: string, container?: Element) => {
+  const elements = Array.from(
+    (container ?? document).querySelectorAll(selector)
+  );
 
-  length() {
-    return this.elements.length;
-  }
-}
-
-export const $ = (selector: string) => {
-  return new SubsetsOfJQuery(selector);
+  return {
+    length: () => {
+      return elements.length;
+    },
+    click: (handler: EventListener) => {
+      elements.forEach((element) => {
+        element.addEventListener("click", handler);
+      });
+    },
+  };
 };
