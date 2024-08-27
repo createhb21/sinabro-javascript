@@ -5,9 +5,12 @@
   "private": true,
   "main": "index.js",
   "workspaces": [
+    "apps/*",
     "packages/*"
   ],
   "scripts": {
+    "example": "yarn workspace example dev",
+    "docs": "yarn workspace docs docs:dev",
     "build": "yarn workspace @createhb21/jquery-subsets build",
     "test": "yarn workspace @createhb21/jquery-subsets test"
   },
